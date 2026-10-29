@@ -1,0 +1,41 @@
+{
+  "workspace": "~/Development",
+  "image": "pi-box:latest",
+  "memory": "2G",
+  "diskSize": "4G",
+  "cpus": 4,
+  "allowedHosts": [
+    "api.github.com",
+    "github.com",
+    "registry.npmjs.org",
+    "pypi.org",
+    "files.pythonhosted.org",
+    "mise.run",
+    "mise.jdx.dev",
+    "objects.githubusercontent.com",
+    "release-assets.githubusercontent.com"
+  ],
+  "tcpHosts": {
+    "host.internal:3000": "127.0.0.1:3000"
+  },
+  "mounts": {
+    "/opt/mise": "~/.local/share/pi-box/mise"
+  },
+  "path": ["/opt/mise/bin", "/opt/mise/data/shims"],
+  "env": {
+    "MISE_DATA_DIR": "/opt/mise/data",
+    "MISE_CACHE_DIR": "/opt/mise/cache",
+    "MISE_CONFIG_DIR": "/opt/mise/config",
+    "MISE_STATE_DIR": "/opt/mise/state",
+    "MISE_ALL_COMPILE": "false"
+  },
+  "secrets": {
+    "GITHUB_TOKEN": {
+      "hosts": ["api.github.com"]
+    },
+    "NPM_TOKEN": {
+      "hosts": ["registry.npmjs.org"],
+      "env": "PI_BOX_NPM_TOKEN"
+    }
+  }
+}

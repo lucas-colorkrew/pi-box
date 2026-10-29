@@ -1,0 +1,34 @@
+{
+  "name": "pi-box",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "check": "npm run typecheck && npm run lint",
+    "typecheck": "tsc",
+    "lint": "biome check .",
+    "fix": "biome check --write .",
+    "image:build": "gondolin build --config image/build-config.json --tag pi-box:latest"
+  },
+  "pi": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "dependencies": {
+    "@earendil-works/gondolin": "^0.14.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.4",
+    "@earendil-works/pi-coding-agent": "^1.4.0",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  },
+  "description": "Run pi coding agent tools inside a Gondolin micro-VM",
+  "engines": {
+    "node": ">=23.6.0"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=1.4.0"
+  }
+}
