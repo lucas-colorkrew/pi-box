@@ -386,13 +386,9 @@ export default function (pi: ExtensionAPI) {
     const bashProbe = await created.exec(["/bin/sh", "-lc", "command -v bash || true"]);
     shellPath = bashProbe.stdout.trim() || "/bin/sh";
     vm = created;
-    ctx?.ui.setStatus(
-      "gondolin",
-      ctx.ui.theme.fg("accent", `Gondolin: ${created.id.slice(0, 8)} (${workspace.guestCwd})`),
-    );
-    ctx?.ui.notify(`Gondolin VM ready. ${workspace.hostRoot} is mounted at ${GUEST_WORKSPACE}.`, "info");
+    ctx?.ui.setStatus("gondolin", ctx.ui.theme.fg("accent", `Gondolin: ${created.id.slice(0, 8)}`));
     if (missingSecrets.length > 0) {
-      ctx?.ui.notify(`Gondolin: secrets not injected (host env var unset): ${missingSecrets.join(", ")}`, "warning");
+      ctx?.ui.notify(`Gondolin: host missing secrets: ${missingSecrets.join(", ")}`, "warning");
     }
     return created;
   }
@@ -432,6 +428,7 @@ export default function (pi: ExtensionAPI) {
         [
           `Gondolin VM: ${activeVm.id}`,
           `Host workspace: ${workspace.hostRoot}`,
+          `Host cwd: ${workspace.hostCwd}`,
           `Guest workspace: ${GUEST_WORKSPACE}`,
           `Guest cwd: ${workspace.guestCwd}`,
           ...Object.entries(config.mounts ?? {}).map(

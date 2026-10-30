@@ -10,7 +10,7 @@
 import path from "node:path";
 import { loadConfig } from "../src/config.ts";
 import { createBoxVm } from "../src/vm.ts";
-import { GUEST_WORKSPACE, resolveWorkspace } from "../src/workspace.ts";
+import { resolveWorkspace } from "../src/workspace.ts";
 
 const separator = process.argv.indexOf("--");
 const command = separator === -1 ? [] : process.argv.slice(separator + 1);
@@ -19,7 +19,6 @@ const config = loadConfig();
 const workspace = resolveWorkspace(process.cwd(), config.workspace);
 const { vm, missingSecrets } = await createBoxVm(config, workspace, `shell ${path.basename(workspace.hostCwd)}`);
 
-console.error(`pi-box: ${workspace.hostRoot} mounted at ${GUEST_WORKSPACE}, cwd ${workspace.guestCwd}`);
 if (missingSecrets.length > 0) {
   console.error(`pi-box: secrets not injected (host env var unset): ${missingSecrets.join(", ")}`);
 }
