@@ -6,17 +6,15 @@ extension.
 
 ## Setup
 
-Requirements: Node.js >= 23.6, [QEMU](https://www.qemu.org/download/), pi, bash.
+Requirements: Node.js 26, [QEMU](https://www.qemu.org/download/), pi, bash. Gondolin uses `qemu-img` for every VM's
+copy-on-write root disk, so QEMU is needed even with the krun backend.
 
-Install dependencies, then symlink the launchers into a directory on your `PATH` (`~/.local/bin` here):
+Install dependencies, then symlink the launcher into a directory on your `PATH`:
 
 ```bash
 npm install --ignore-scripts
-ln -s "$PWD/bin/pi-box" ~/.local/bin/pi-box              # launch pi in the box
-ln -s "$PWD/bin/pi-box-shell" ~/.local/bin/pi-box-shell  # shell into the box
+ln -s "$PWD/bin/pi-box" ~/.local/bin/pi-box
 ```
-
-Development: `npm run check` (runs `tsc` and `biome check`), `npm run fix` (formats and applies lint fixes).
 
 ## Workspace mounting
 
@@ -38,6 +36,7 @@ Optional JSON file at `~/.config/pi-box/config.json`, or wherever `$PI_BOX_CONFI
 | -------------- | ------------------ | ---------------------------------------------------------------- |
 | `workspace`    | `PI_BOX_WORKSPACE` | Mount root (see above)                                           |
 | `image`        | `PI_BOX_IMAGE`     | Gondolin image: `name:tag`, build id, or asset directory         |
+| `vmm`          | `GONDOLIN_VMM`     | VM backend: `"qemu"` (default) or `"krun"` (see below)           |
 | `memory`       |                    | VM memory, e.g. `"2G"` (default `1G`)                            |
 | `diskSize`     |                    | Minimum guest root disk, e.g. `"4G"` (default image: ~90MB free) |
 | `cpus`         |                    | VM CPUs (default 2)                                              |
@@ -45,14 +44,16 @@ Optional JSON file at `~/.config/pi-box/config.json`, or wherever `$PI_BOX_CONFI
 | `tcpHosts`     |                    | Guest hostnames mapped to host-side TCP ports (see below)        |
 | `mounts`       |                    | Extra persistent host directories (see below)                    |
 | `path`         |                    | Guest directories prepended to `PATH`                            |
-| `prompt`       |                    | Shell prompt (`PS1`); default `pi-box:<cwd># ` in color          |
 | `env`          |                    | Extra non-secret guest environment variables                     |
 | `secrets`      |                    | Secrets injected into outbound HTTP requests (see below)         |
+
+Don't set `PATH` in `env`: the guest's `/etc/profile` resets it in every login shell. Use `path` instead. pi-box
+writes it to `/etc/profile.d/zz-pi-box.sh` at boot.
 
 ## Extra mounts
 
 `mounts` maps absolute guest paths to host directories. pi-box creates a host directory if it doesn't exist. Files
-written under a mount live on the host, so they persist across VMs and are shared with `pi-box-shell`:
+written under a mount live on the host, so they persist across VMs and are shared with `pi-box shell`:
 
 ```json
 {
@@ -65,13 +66,9 @@ written under a mount live on the host, so they persist across VMs and are share
 
 Mounts may not overlap `/workspace`.
 
-Don't set `PATH` in `env`: the guest's `/etc/profile` resets it in every login shell. Use `path` instead. pi-box
-writes it to `/etc/profile.d/zz-pi-box.sh` at boot.
+### Persistent mise tools
 
-### Example: persistent mise tools
-
-The VM runs Alpine Linux (musl), so the binaries in your host's mise directory generally won't run there. Give the VM
-its own mise directory instead:
+If your host's tool binaries won't run in the VM, you can give the VM its own mise directories:
 
 ```json
 {
@@ -91,19 +88,17 @@ Install mise into the mount once (if you use `allowedHosts`, it must include `mi
 and GitHub's asset hosts):
 
 ```bash
-pi-box-shell -- sh -c 'curl -fsSL https://mise.run | MISE_INSTALL_PATH=/opt/mise/bin/mise sh'
-pi-box-shell -- sh -c 'cd /tmp && mise use -g node@22'
+pi-box shell -- sh -c 'curl -fsSL https://mise.run | MISE_INSTALL_PATH=/opt/mise/bin/mise sh'
+pi-box shell -- sh -c 'cd /tmp && mise use -g node@22'
 ```
 
-After that, tools that mise installs (from either pi or the shell) persist in `~/.local/share/pi-box/mise`. The
-`MISE_CONFIG_DIR`/`MISE_STATE_DIR` settings matter: `/root` is an in-memory disk in the guest, so mise's default global
-config would be lost with each VM.
+After that, tools that mise installs (from either pi or the shell) persist in `~/.local/share/pi-box/mise`.
 
 Known limitations (verified with Gondolin 0.14.0):
 
 - **`MISE_ALL_COMPILE=false` is needed on Alpine.** mise defaults `all_compile` to `true` on musl, which builds
   tools like Node from source; that's slow and runs out of space in the in-memory `/tmp`. With it set to `false`,
-  mise installs prebuilt musl binaries (tested: `node@22` installs `linux-arm64-musl`).
+  mise installs prebuilt musl binaries.
 - **`mise-versions.jdx.dev`** returned unparseable responses through Gondolin's proxy during testing. Use
   `MISE_USE_VERSIONS_HOST=false` (add it to `env`) to query GitHub directly.
 - **`rm -rf` on mounts skips entries** in directories with more than ~16 files ("Directory not empty"). This is a
@@ -125,19 +120,18 @@ machine, such as a dev server or database:
 ```
 
 Inside the VM, `curl http://host.internal:3000` reaches the host's port 3000. Any TCP protocol works, not only HTTP.
-`localhost` in the guest is the guest itself, so pick another name. Ports you don't map are not forwarded.
+`localhost` in the guest is the guest itself, so pick another name.
 
 Mapped connections bypass the HTTP proxy, so `allowedHosts` doesn't restrict them and `secrets` aren't injected into
 them. Setting `tcpHosts` also switches the guest to Gondolin's per-host synthetic DNS, which TCP mapping requires.
 
 ## Custom image
 
-Edit the package list in [`image/build-config.json`](image/build-config.json) (by default it adds git, ripgrep, fd and
-jq to Gondolin's base image), then run:
+Edit the build config in [`image/build-config.json`](image/build-config.json), then run:
 
 ```bash
-npm run image:build          # gondolin build ... --tag pi-box:latest
-export PI_BOX_IMAGE=pi-box:latest   # or set "image" in the config file
+npm run image:build                  # gondolin build ... --tag pi-box:latest
+export PI_BOX_IMAGE=pi-box:latest    # or set "image" in your pi-box config
 ```
 
 To start from a fresh template, run `npx gondolin build --init-config > image/build-config.json`. The config pins
@@ -146,13 +140,15 @@ To start from a fresh template, run `npx gondolin build --init-config > image/bu
 ## Shell access
 
 ```bash
-pi-box-shell                 # interactive bash in the guest, starting in the matching cwd
-pi-box-shell -- npm test     # run a single command
+pi-box shell                # interactive bash in the guest, starting in the matching cwd
+pi-box shell -- npm test    # run a single command
 ```
 
-The interactive shell is a login shell, so it picks up `path` and `prompt`. The shell uses the same mount, image,
-allowlist and secrets as the extension. Each invocation boots its own VM, separate from any running pi session. To
-attach to a running pi session's VM instead, use `npx gondolin list`, then `npx gondolin attach <id>`.
+The interactive shell is fish if the guest has it (add `fish` to the image's packages, or install it under a
+`path` directory), otherwise bash. It runs as a login shell, so it picks up `path`. The guest's hostname is `pi-box`.
+The shell uses the same mount, image, allowlist and secrets as the extension. Each invocation boots its own VM, separate
+from any running pi session. To attach to a running pi session's VM instead, use `npx gondolin list`, then
+`npx gondolin attach <id>`.
 
 ## Secrets
 
@@ -177,4 +173,4 @@ Inside the VM, `curl -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github
 $GITHUB_TOKEN` prints only the placeholder.
 
 Bash commands receive only pi's session variables (`PI_SESSION_ID`, `PI_MODEL`, …). They do not receive the host
-environment. The upstream example forwarded the whole host `process.env`, which would expose real keys to the guest.
+environment.

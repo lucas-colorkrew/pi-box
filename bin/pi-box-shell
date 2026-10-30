@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-# Shell into a pi-box VM for the current directory. Symlink onto your PATH.
-set -euo pipefail
-root="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
-exec node "$root/scripts/shell.ts" "$@"

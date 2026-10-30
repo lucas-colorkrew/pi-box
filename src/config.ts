@@ -25,11 +25,15 @@ export type MountConfig = {
   readonly?: boolean;
 };
 
+export type VmmBackend = "qemu" | "krun";
+
 export type BoxConfig = {
   /** directory to mount when the current directory is inside it */
   workspace?: string;
   /** gondolin image selector (name:tag, build id) or asset directory */
   image?: string;
+  /** vm backend (default: $GONDOLIN_VMM, else "qemu"); krun needs an image built with krun assets */
+  vmm?: VmmBackend;
   /** vm memory, qemu syntax (e.g. "2G") */
   memory?: string;
   /** minimum guest root disk size, e.g. "4G" (the default image has ~90MB free) */
@@ -44,8 +48,6 @@ export type BoxConfig = {
   mounts?: Record<string, string | MountConfig>;
   /** guest directories prepended to PATH in login shells (PATH in `env` is reset by /etc/profile) */
   path?: string[];
-  /** interactive shell prompt (PS1) */
-  prompt?: string;
   /** extra non-secret guest environment variables */
   env?: Record<string, string>;
   /** secrets injected into outbound HTTP requests, keyed by guest env var name */
@@ -71,9 +73,11 @@ function validateConfig(raw: unknown, source: string): BoxConfig {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) fail("expected a JSON object");
   const config = raw as Record<string, unknown>;
 
-  for (const key of ["workspace", "image", "memory", "diskSize", "prompt"] as const) {
+  for (const key of ["workspace", "image", "memory", "diskSize"] as const) {
     if (config[key] !== undefined && typeof config[key] !== "string") fail(`"${key}" must be a string`);
   }
+  if (config.vmm !== undefined && config.vmm !== "qemu" && config.vmm !== "krun")
+    fail(`"vmm" must be "qemu" or "krun"`);
   if (config.cpus !== undefined && typeof config.cpus !== "number") fail(`"cpus" must be a number`);
   if (config.allowedHosts !== undefined && !isStringArray(config.allowedHosts)) {
     fail(`"allowedHosts" must be an array of strings`);

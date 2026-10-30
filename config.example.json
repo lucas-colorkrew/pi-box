@@ -1,6 +1,7 @@
 {
   "workspace": "~/Development",
   "image": "pi-box:latest",
+  "vmm": "krun",
   "memory": "2G",
   "diskSize": "4G",
   "cpus": 4,

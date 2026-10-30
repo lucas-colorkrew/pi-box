@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-# Launch pi with the pi-box extension for the current directory. Symlink onto your PATH.
+# Launch pi with the pi-box extension, or `pi-box shell` to shell into a VM, for the current directory.
+# Symlink onto your PATH.
 set -euo pipefail
 root="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+if [[ "${1-}" == shell ]]; then
+  shift
+  exec node "$root/scripts/shell.ts" "$@"
+fi
 exec pi -e "$root" "$@"

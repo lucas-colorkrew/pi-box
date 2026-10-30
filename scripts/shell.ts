@@ -3,8 +3,8 @@
  * workspace, image, egress and secret configuration as the pi extension.
  *
  * Usage (from any directory):
- *   bin/pi-box-shell                 # interactive bash in the guest cwd
- *   bin/pi-box-shell -- git status   # run a single command
+ *   pi-box shell                 # interactive bash in the guest cwd
+ *   pi-box shell -- git status   # run a single command
  */
 
 import path from "node:path";
@@ -26,8 +26,13 @@ if (missingSecrets.length > 0) {
 
 // `exec "$@"` under a login shell so the command is looked up on the guest PATH
 const argv = command.length > 0 ? ["/bin/sh", "-lc", 'exec "$@"', "sh", ...command] : undefined;
-// login shell so /etc/profile.d (pi-box PATH and prompt) is sourced; non-login bash only reads /etc/bash/bashrc
-const loginShell = ["/bin/sh", "-c", "command -v bash >/dev/null && exec bash -l || exec sh -l"];
+// sh -l sources /etc/profile.d (pi-box PATH) first, so fish (which skips it) inherits PATH and is found
+// on it too; non-login bash only reads /etc/bash/bashrc, hence bash -l. An empty fish_greeting silences fish's welcome.
+const loginShell = [
+  "/bin/sh",
+  "-lc",
+  "command -v fish >/dev/null && exec env fish_greeting= fish -l; command -v bash >/dev/null && exec bash -l; exec sh -l",
+];
 
 let exitCode = 1;
 try {

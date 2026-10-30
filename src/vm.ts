@@ -35,14 +35,20 @@ function shellQuote(value: string): string {
   return `'${value.replaceAll("'", `'\\''`)}'`;
 }
 
-/** cyan "pi-box", blue cwd; the guest has no hostname, so Alpine's default `\h` shows "(none)" */
-const DEFAULT_PROMPT = "\\[\\e[1;36m\\]pi-box\\[\\e[0m\\]:\\[\\e[1;34m\\]\\w\\[\\e[0m\\]\\$ ";
+const HOSTNAME = "pi-box";
 
-/** Login shells (pi's bash tool, pi-box-shell) source /etc/profile.d after /etc/profile resets PATH and PS1. */
+/** The guest boots without a hostname, so prompts (Alpine's default `\h`) show "(none)". */
+async function setHostname(vm: VM): Promise<void> {
+  await vm.fs.writeFile("/etc/hostname", `${HOSTNAME}\n`, { encoding: "utf8" });
+  const result = await vm.exec(["hostname", HOSTNAME]);
+  if (result.exitCode !== 0) throw new Error(`pi-box: failed to set guest hostname (exit ${result.exitCode})`);
+}
+
+/** Login shells (pi's bash tool, pi-box shell) source /etc/profile.d after /etc/profile resets PATH. */
 async function writeProfile(vm: VM, config: BoxConfig): Promise<void> {
-  const lines = [`PS1=${shellQuote(config.prompt ?? DEFAULT_PROMPT)}`];
-  if (config.path?.length) lines.push(`export PATH=${config.path.map(shellQuote).join(":")}:"$PATH"`);
-  await vm.fs.writeFile(PROFILE_SCRIPT, `${lines.join("\n")}\n`, { encoding: "utf8" });
+  if (!config.path?.length) return;
+  const line = `export PATH=${config.path.map(shellQuote).join(":")}:"$PATH"`;
+  await vm.fs.writeFile(PROFILE_SCRIPT, `${line}\n`, { encoding: "utf8" });
 }
 
 /**
@@ -63,13 +69,21 @@ export async function createBoxVm(config: BoxConfig, workspace: Workspace, sessi
     ...(config.memory ? { memory: config.memory } : {}),
     ...(config.cpus ? { cpus: config.cpus } : {}),
     ...(config.diskSize ? { rootfs: { size: config.diskSize } } : {}),
-    ...(config.image ? { sandbox: { imagePath: expandHome(config.image) } } : {}),
+    ...(config.image || config.vmm
+      ? {
+          sandbox: {
+            ...(config.image ? { imagePath: expandHome(config.image) } : {}),
+            ...(config.vmm ? { vmm: config.vmm } : {}),
+          },
+        }
+      : {}),
     // Gondolin requires per-host synthetic DNS to route mapped TCP connections.
     ...(config.tcpHosts && Object.keys(config.tcpHosts).length > 0
       ? { tcp: { hosts: config.tcpHosts }, dns: { mode: "synthetic", syntheticHostMapping: "per-host" } }
       : {}),
     vfs: { mounts: buildMounts(config, workspace) },
   });
+  await setHostname(vm);
   await writeProfile(vm, config);
   return { vm, missingSecrets: missing };
 }
