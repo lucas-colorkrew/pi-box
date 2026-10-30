@@ -388,7 +388,7 @@ export default function (pi: ExtensionAPI) {
     vm = created;
     ctx?.ui.setStatus("gondolin", ctx.ui.theme.fg("accent", `Gondolin: ${created.id.slice(0, 8)}`));
     if (missingSecrets.length > 0) {
-      ctx?.ui.notify(`Gondolin: host missing secrets: ${missingSecrets.join(", ")}`, "warning");
+      ctx?.ui.notify(`pi-box: host missing secrets: ${missingSecrets.join(", ")}`, "warning");
     }
     return created;
   }

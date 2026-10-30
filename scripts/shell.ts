@@ -20,7 +20,7 @@ const workspace = resolveWorkspace(process.cwd(), config.workspace);
 const { vm, missingSecrets } = await createBoxVm(config, workspace, `shell ${path.basename(workspace.hostCwd)}`);
 
 if (missingSecrets.length > 0) {
-  console.error(`pi-box: secrets not injected (host env var unset): ${missingSecrets.join(", ")}`);
+  console.error(`pi-box: host missing secrets: ${missingSecrets.join(", ")}`);
 }
 
 // `exec "$@"` under a login shell so the command is looked up on the guest PATH
