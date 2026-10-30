@@ -14,8 +14,10 @@
       "curl",
       "e2fsprogs",
       "e2fsprogs-extra",
+      "fish",
       "openssh",
       "git",
+      "github-cli",
       "ripgrep",
       "fd",
       "jq"

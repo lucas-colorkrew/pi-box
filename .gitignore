@@ -1,3 +1,5 @@
 node_modules/
+images/*.json
+!images/example.json
 *.log
 .DS_Store

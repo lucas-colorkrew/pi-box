@@ -36,7 +36,7 @@ Optional JSON file at `~/.config/pi-box/config.json`, or wherever `$PI_BOX_CONFI
 | -------------- | ------------------ | ---------------------------------------------------------------- |
 | `workspace`    | `PI_BOX_WORKSPACE` | Mount root (see above)                                           |
 | `image`        | `PI_BOX_IMAGE`     | Gondolin image: `name:tag`, build id, or asset directory         |
-| `vmm`          | `GONDOLIN_VMM`     | VM backend: `"qemu"` (default) or `"krun"` (see below)           |
+| `vmm`          | `GONDOLIN_VMM`     | VM backend: `"qemu"` (default) or `"krun"`                       |
 | `memory`       |                    | VM memory, e.g. `"2G"` (default `1G`)                            |
 | `diskSize`     |                    | Minimum guest root disk, e.g. `"4G"` (default image: ~90MB free) |
 | `cpus`         |                    | VM CPUs (default 2)                                              |
@@ -128,15 +128,13 @@ them. Setting `tcpHosts` also switches the guest to Gondolin's per-host syntheti
 
 First, read Gondolin's [custom images guide](https://earendil-works.github.io/gondolin/custom-images/).
 
-Edit the build config in [`image/build-config.json`](image/build-config.json), then run:
+Create your own build config in `images/`, edit it, and build:
 
 ```bash
-npm run image:build                  # gondolin build ... --tag pi-box:latest
+npx gondolin build --init-config > images/custom.json
+npx gondolin build --config images/custom.json --tag pi-box:latest
 export PI_BOX_IMAGE=pi-box:latest    # or set "image" in your pi-box config
 ```
-
-To start from a fresh template, run `npx gondolin build --init-config > image/build-config.json`. The config pins
-`"arch": "aarch64"`; change it to `x86_64` on x86-64 hosts.
 
 ## Shell access
 

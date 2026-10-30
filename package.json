@@ -7,8 +7,7 @@
     "check": "npm run typecheck && npm run lint",
     "typecheck": "tsc",
     "lint": "biome check .",
-    "fix": "biome check --write .",
-    "image:build": "gondolin build --config image/build-config.json --tag pi-box:latest"
+    "fix": "biome check --write ."
   },
   "pi": {
     "extensions": [
