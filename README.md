@@ -98,8 +98,7 @@ Known limitations (verified with Gondolin 0.14.0):
 - **`MISE_ALL_COMPILE=false` is needed on Alpine.** mise defaults `all_compile` to `true` on musl, which builds tools
   like Node from source; that's slow and runs out of space in the in-memory `/tmp`. With it set to `false`, mise
   installs prebuilt musl binaries.
-- **`mise-versions.jdx.dev`** returned unparseable responses through Gondolin's proxy during testing. Use
-  `MISE_USE_VERSIONS_HOST=false` (add it to `env`) to query GitHub directly.
+- Installing some tools that download zstd archives won't work due to a Gondolin bug.
 - **`rm -rf` on mounts skips entries** in directories with more than ~16 files ("Directory not empty"). This is a
   Gondolin bug: `vfs/rpc-service.js` pages directory listings by index, and every deletion shifts the indices. It
   affects `/workspace` too (e.g. `rm -rf node_modules`). Each re-run of `rm -rf` removes more; repeat until it succeeds.
