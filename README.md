@@ -1,7 +1,7 @@
 # pi-box
 
-Runs [pi](https://github.com/earendil-works/pi)'s built-in tools (read, write, edit, bash, ls, find, grep) inside a local
-[Gondolin](https://earendil-works.github.io/gondolin/) micro-VM. It started from pi's official `gondolin` example
+Runs [pi](https://github.com/earendil-works/pi)'s built-in tools (read, write, edit, bash, ls, find, grep) inside a
+local [Gondolin](https://earendil-works.github.io/gondolin/) micro-VM. It started from pi's official `gondolin` example
 extension.
 
 ## Setup
@@ -47,8 +47,8 @@ Optional JSON file at `~/.config/pi-box/config.json`, or wherever `$PI_BOX_CONFI
 | `env`          |                    | Extra non-secret guest environment variables                     |
 | `secrets`      |                    | Secrets injected into outbound HTTP requests (see below)         |
 
-Don't set `PATH` in `env`: the guest's `/etc/profile` resets it in every login shell. Use `path` instead. pi-box
-writes it to `/etc/profile.d/zz-pi-box.sh` at boot.
+Don't set `PATH` in `env`: the guest's `/etc/profile` resets it in every login shell. Use `path` instead. pi-box writes
+it to `/etc/profile.d/zz-pi-box.sh` at boot.
 
 ## Extra mounts
 
@@ -89,16 +89,15 @@ and GitHub's asset hosts):
 
 ```bash
 pi-box shell -- sh -c 'curl -fsSL https://mise.run | MISE_INSTALL_PATH=/opt/mise/bin/mise sh'
-pi-box shell -- sh -c 'cd /tmp && mise use -g node@22'
 ```
 
 After that, tools that mise installs (from either pi or the shell) persist in `~/.local/share/pi-box/mise`.
 
 Known limitations (verified with Gondolin 0.14.0):
 
-- **`MISE_ALL_COMPILE=false` is needed on Alpine.** mise defaults `all_compile` to `true` on musl, which builds
-  tools like Node from source; that's slow and runs out of space in the in-memory `/tmp`. With it set to `false`,
-  mise installs prebuilt musl binaries.
+- **`MISE_ALL_COMPILE=false` is needed on Alpine.** mise defaults `all_compile` to `true` on musl, which builds tools
+  like Node from source; that's slow and runs out of space in the in-memory `/tmp`. With it set to `false`, mise
+  installs prebuilt musl binaries.
 - **`mise-versions.jdx.dev`** returned unparseable responses through Gondolin's proxy during testing. Use
   `MISE_USE_VERSIONS_HOST=false` (add it to `env`) to query GitHub directly.
 - **`rm -rf` on mounts skips entries** in directories with more than ~16 files ("Directory not empty"). This is a
@@ -127,6 +126,8 @@ them. Setting `tcpHosts` also switches the guest to Gondolin's per-host syntheti
 
 ## Custom image
 
+First, read Gondolin's [custom images guide](https://earendil-works.github.io/gondolin/custom-images/).
+
 Edit the build config in [`image/build-config.json`](image/build-config.json), then run:
 
 ```bash
@@ -140,15 +141,14 @@ To start from a fresh template, run `npx gondolin build --init-config > image/bu
 ## Shell access
 
 ```bash
-pi-box shell                # interactive bash in the guest, starting in the matching cwd
-pi-box shell -- npm test    # run a single command
+pi-box shell                    # interactive shell in the guest, starting in the matching cwd
+pi-box shell -- mise install    # run a single command
 ```
 
-The interactive shell is fish if the guest has it (add `fish` to the image's packages, or install it under a
-`path` directory), otherwise bash. It runs as a login shell, so it picks up `path`. The guest's hostname is `pi-box`.
-The shell uses the same mount, image, allowlist and secrets as the extension. Each invocation boots its own VM, separate
-from any running pi session. To attach to a running pi session's VM instead, use `npx gondolin list`, then
-`npx gondolin attach <id>`.
+The interactive shell is fish if the guest has it, otherwise bash. It runs as a login shell, so it picks up `path`. The
+guest's hostname is `pi-box`. The shell uses the same mount, image, allowlist and secrets as the extension. Each
+invocation boots its own VM, separate from any running pi session. To attach to a running pi session's VM instead, use
+`npx gondolin list`, then `npx gondolin attach <id>`.
 
 ## Secrets
 
@@ -164,10 +164,9 @@ replaces the placeholder with the real value in outbound request headers, and on
 }
 ```
 
-Each real value is read from the host environment variable named by `env` (default: the secret's name). Values are
-never stored in the config file. Load them from a secret manager or your keychain at launch, e.g.
-`GITHUB_TOKEN=$(gh auth token) pi-box`. If a configured secret's host env var is unset, pi-box shows a warning and
-skips that secret.
+Each real value is read from the host environment variable named by `env` (default: the secret's name). Values are never
+stored in the config file. Load them from a secret manager or your keychain at launch, e.g. `GITHUB_TOKEN=$(gh auth
+token) pi-box`. If a configured secret's host env var is unset, pi-box shows a warning and skips that secret.
 
 Inside the VM, `curl -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/user` works, but `echo
 $GITHUB_TOKEN` prints only the placeholder.
